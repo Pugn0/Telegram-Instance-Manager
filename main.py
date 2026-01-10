@@ -7,8 +7,12 @@ import json
 import os
 import shutil
 import subprocess
+import webbrowser
+import socket
 from datetime import datetime
 from pathlib import Path
+import threading
+import time
 
 app = FastAPI(title="Telegram Instance Manager")
 
@@ -42,6 +46,24 @@ class InstanceUpdate(BaseModel):
     name: str
 
 # Funções auxiliares
+def find_free_port(start_port=8080, max_attempts=100):
+    """Encontra uma porta disponível a partir de start_port"""
+    for port in range(start_port, start_port + max_attempts):
+        try:
+            # Tenta criar um socket na porta
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1)
+            result = sock.connect_ex(('localhost', port))
+            sock.close()
+            
+            # Se connect_ex retorna != 0, a porta está livre
+            if result != 0:
+                return port
+        except:
+            continue
+    
+    raise Exception(f"Nenhuma porta disponível entre {start_port} e {start_port + max_attempts}")
+
 def load_instances():
     """Carrega instâncias do arquivo JSON"""
     if not INSTANCES_FILE.exists():
@@ -68,6 +90,11 @@ def get_next_id(instances):
         return 1
     return max(inst['id'] for inst in instances) + 1
 
+def open_browser(url):
+    """Abre o navegador após 1.5 segundos"""
+    time.sleep(1.5)
+    webbrowser.open(url)
+
 # Endpoints
 @app.get("/health")
 def health_check():
@@ -82,7 +109,10 @@ def health_check():
 def list_instances():
     """Lista todas as instâncias"""
     instances = load_instances()
-    print(f"📋 Listando {len(instances)} instâncias")
+    # Adicionar status de pasta existente
+    for inst in instances:
+        inst['folder_exists'] = Path(inst['folder']).exists()
+        inst['telegram_exe_exists'] = (Path(inst['folder']) / "Telegram.exe").exists()
     return instances
 
 @app.post("/instances")
@@ -101,9 +131,7 @@ def create_instance(data: InstanceCreate):
     instance_folder = INSTANCES_BASE / f"instance_{new_id}"
     
     try:
-        print(f"📦 Criando instância {new_id}: {data.name}")
-        print(f"   Copiando de: {TELEGRAM_BASE}")
-        print(f"   Para: {instance_folder}")
+        print(f"📦 Criando instância #{new_id}: {data.name}")
         
         # Copiar pasta base
         shutil.copytree(TELEGRAM_BASE, instance_folder)
@@ -113,13 +141,15 @@ def create_instance(data: InstanceCreate):
             "id": new_id,
             "name": data.name,
             "folder": str(instance_folder),
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
+            "folder_exists": True,
+            "telegram_exe_exists": True
         }
         
         instances.append(new_instance)
         save_instances(instances)
         
-        print(f"✅ Instância {new_id} criada com sucesso!")
+        print(f"✅ Instância #{new_id} criada!")
         return new_instance
         
     except Exception as e:
@@ -139,7 +169,7 @@ def update_instance(instance_id: int, data: InstanceUpdate):
             old_name = inst['name']
             inst['name'] = data.name
             save_instances(instances)
-            print(f"✏️ Instância {instance_id} renomeada: {old_name} → {data.name}")
+            print(f"✏️ #{instance_id}: {old_name} → {data.name}")
             return inst
     
     raise HTTPException(status_code=404, detail="Instância não encontrada")
@@ -156,18 +186,18 @@ def delete_instance(instance_id: int):
             try:
                 # Remover pasta
                 if folder.exists():
-                    print(f"🗑️ Removendo pasta: {folder}")
+                    print(f"🗑️ Excluindo #{instance_id}: {inst['name']}")
                     shutil.rmtree(folder)
                 
                 # Remover do JSON
                 instances.pop(i)
                 save_instances(instances)
                 
-                print(f"✅ Instância {instance_id} excluída com sucesso!")
+                print(f"✅ Instância #{instance_id} excluída!")
                 return {"message": "Instância excluída com sucesso"}
                 
             except Exception as e:
-                print(f"❌ Erro ao excluir instância: {e}")
+                print(f"❌ Erro ao excluir: {e}")
                 raise HTTPException(
                     status_code=500, 
                     detail=f"Erro ao excluir instância: {str(e)}"
@@ -191,17 +221,15 @@ def start_instance(instance_id: int):
                 )
             
             try:
-                print(f"🚀 Iniciando Telegram da instância {instance_id}: {inst['name']}")
-                print(f"   Executando: {exe_path}")
+                print(f"🚀 Iniciando #{instance_id}: {inst['name']}")
                 
                 # Iniciar processo
                 subprocess.Popen([str(exe_path)], cwd=str(exe_path.parent))
                 
-                print(f"✅ Telegram iniciado com sucesso!")
                 return {"message": f"Telegram iniciado: {inst['name']}"}
                 
             except Exception as e:
-                print(f"❌ Erro ao iniciar Telegram: {e}")
+                print(f"❌ Erro ao iniciar: {e}")
                 raise HTTPException(
                     status_code=500, 
                     detail=f"Erro ao iniciar Telegram: {str(e)}"
@@ -222,7 +250,6 @@ def open_folder(instance_id: int):
                 raise HTTPException(status_code=404, detail="Pasta não encontrada")
             
             try:
-                print(f"📂 Abrindo pasta: {folder}")
                 os.startfile(folder)
                 return {"message": "Pasta aberta no Explorer"}
             except Exception as e:
@@ -245,12 +272,43 @@ def serve_frontend():
 
 if __name__ == "__main__":
     import uvicorn
-    print("=" * 60)
-    print("🚀 TELEGRAM INSTANCE MANAGER")
-    print("=" * 60)
-    print(f"📍 Servidor: http://localhost:8080")
-    print(f"📊 API Docs: http://localhost:8080/docs")
-    print(f"📁 Pasta base: {TELEGRAM_BASE}")
-    print(f"📁 Instâncias: {INSTANCES_BASE}")
-    print("=" * 60)
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    import logging
+    
+    # Configurar logging - silenciar Uvicorn
+    logging.getLogger("uvicorn").setLevel(logging.WARNING)
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    
+    # Encontrar porta disponível
+    try:
+        port = find_free_port(8080)
+        url = f"http://localhost:{port}"
+        
+        print("=" * 60)
+        print("🚀 TELEGRAM INSTANCE MANAGER")
+        print("=" * 60)
+        print(f"🌐 Servidor: {url}")
+        print(f"📊 API Docs: {url}/docs")
+        print(f"🔌 Porta: {port}")
+        print(f"📁 Pasta base: {TELEGRAM_BASE}")
+        print(f"📁 Instâncias: {INSTANCES_BASE}")
+        print("=" * 60)
+        print("⏳ Abrindo navegador em 1.5s...")
+        print("💡 Pressione CTRL+C para parar o servidor")
+        print("=" * 60)
+        
+        # Abrir navegador em thread separada
+        threading.Thread(target=open_browser, args=(url,), daemon=True).start()
+        
+        uvicorn.run(
+            app, 
+            host="0.0.0.0", 
+            port=port,
+            log_level="warning",  # Apenas warnings e erros
+            access_log=False      # Desativa log de acesso
+        )
+        
+    except KeyboardInterrupt:
+        print("\n👋 Servidor encerrado!")
+    except Exception as e:
+        print(f"❌ Erro ao iniciar servidor: {e}")
+        input("Pressione Enter para sair...")
