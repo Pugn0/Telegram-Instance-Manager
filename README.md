@@ -1,270 +1,211 @@
 # 📱 Telegram Instance Manager
 
-Gerenciador completo de múltiplas instâncias do Telegram Desktop para Windows 11.
+> Gerencie múltiplas instâncias do Telegram Desktop de forma simples e eficiente
 
-## 🎯 Funcionalidades
+![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green.svg)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-- ✅ **Criar** múltiplas instâncias do Telegram
-- ✅ **Listar** todas as instâncias criadas
-- ✅ **Renomear** instâncias
-- ✅ **Excluir** instâncias (remove pasta e dados)
-- ✅ **Iniciar** Telegram de cada instância
-- ✅ **Abrir pasta** no Explorer
-- ✅ Interface web moderna e responsiva
-- ✅ API REST completa
-- ✅ Backup automático em JSON
+## 🎯 Sobre o Projeto
 
-## 📁 Estrutura do Projeto
+O **Telegram Instance Manager** é uma ferramenta completa para gerenciar múltiplas instâncias do Telegram Desktop no Windows. Ideal para quem precisa usar várias contas simultaneamente sem complicações.
 
-```
-telegram_instance_manager/
-│
-├── main.py                 # API FastAPI
-├── requirements.txt        # Dependências Python
-├── README.md              # Esta documentação
-│
-├── data/
-│   └── instances.json     # Banco de dados local (criado automaticamente)
-│
-└── web/
-    └── index.html         # Interface web
-```
+### ✨ Funcionalidades
 
-## 🚀 Instalação
+- ✅ **Criar instâncias** - Clone sua instalação do Telegram Desktop
+- ▶️ **Iniciar/Parar** - Controle cada instância individualmente
+- 🔄 **Status em tempo real** - Veja quais instâncias estão ativas
+- 🕒 **Histórico de uso** - Acompanhe "visto por último" de cada instância
+- ✏️ **Renomear** - Organize suas instâncias com nomes personalizados
+- 📂 **Acesso rápido** - Abra a pasta de cada instância diretamente
+- 🗑️ **Exclusão segura** - Remova instâncias que não precisa mais
+- 🌐 **Interface web** - Moderna, responsiva e intuitiva
 
-### 1. Clone ou crie a estrutura de pastas
+## 🚀 Como Usar
 
+### Pré-requisitos
+
+- Windows 10/11
+- Python 3.7 ou superior
+- Telegram Desktop instalado
+
+### Instalação
+
+1. **Clone o repositório**
 ```bash
-mkdir telegram_instance_manager
-cd telegram_instance_manager
+git clone https://github.com/seu-usuario/telegram-instance-manager.git
+cd telegram-instance-manager
 ```
 
-### 2. Crie os arquivos
-
-- Copie o conteúdo de `main.py`
-- Crie a pasta `web/` e adicione `index.html`
-- Crie o arquivo `requirements.txt`
-
-### 3. Instale as dependências
-
+2. **Instale as dependências**
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Execute o servidor
-
+3. **Execute o programa**
 ```bash
 python main.py
 ```
 
-## 🌐 Acesso
-
-Após iniciar o servidor, acesse:
-
-- **Interface Web**: http://localhost:8080
-- **API Docs**: http://localhost:8080/docs
-- **Health Check**: http://localhost:8080/health
-
-## 📡 API Endpoints
-
-### GET /instances
-Lista todas as instâncias criadas.
-
-**Resposta:**
-```json
-[
-  {
-    "id": 1,
-    "name": "Pugno Coder",
-    "folder": "C:\\Users\\pugno\\AppData\\Roaming\\Telegram_Instances\\instance_1",
-    "created_at": "2025-11-13T12:00:00"
-  }
-]
+ou simplesmente clique duas vezes em:
+```
+telegram.bat
 ```
 
-### POST /instances
-Cria uma nova instância.
+4. **Acesse a interface**
+- O navegador abrirá automaticamente
+- Ou acesse manualmente: `http://localhost:8080`
 
-**Body:**
-```json
-{
-  "name": "Pugno Coder"
-}
+## 📖 Guia Rápido
+
+### Criar uma Nova Instância
+
+1. Digite um nome no campo "Nome da instância"
+2. Clique em **Criar Instância**
+3. Aguarde a cópia dos arquivos
+4. Pronto! Sua instância está criada
+
+### Iniciar uma Instância
+
+1. Clique no botão **▶️ Iniciar**
+2. O Telegram abrirá automaticamente
+3. O status mudará para **🟢 Ativo agora**
+
+### Parar uma Instância
+
+1. Clique no botão **⏹️ Parar**
+2. O Telegram será fechado
+3. O status mostrará **🕒 Visto por último**
+
+## 🛠️ Estrutura do Projeto
+
 ```
-
-**Resposta:**
-```json
-{
-  "id": 1,
-  "name": "Pugno Coder",
-  "folder": "C:\\Users\\pugno\\AppData\\Roaming\\Telegram_Instances\\instance_1",
-  "created_at": "2025-11-13T12:00:00"
-}
-```
-
-### PUT /instances/{id}
-Renomeia uma instância.
-
-**Body:**
-```json
-{
-  "name": "Novo Nome"
-}
-```
-
-### DELETE /instances/{id}
-Exclui uma instância e sua pasta.
-
-**Resposta:**
-```json
-{
-  "message": "Instância excluída com sucesso"
-}
-```
-
-### POST /instances/{id}/start
-Inicia o Telegram da instância.
-
-**Resposta:**
-```json
-{
-  "message": "Telegram iniciado: Pugno Coder"
-}
-```
-
-### POST /instances/{id}/open-folder
-Abre a pasta da instância no Explorer.
-
-**Resposta:**
-```json
-{
-  "message": "Pasta aberta no Explorer"
-}
-```
-
-### GET /health
-Verifica o status da API.
-
-**Resposta:**
-```json
-{
-  "status": "ok",
-  "telegram_base_exists": true,
-  "instances_folder_exists": true
-}
+telegram-instance-manager/
+│
+├── main.py                 # Backend FastAPI
+├── telegram.bat            # Script de inicialização Windows
+├── requirements.txt        # Dependências Python
+│
+├── web/
+│   └── index.html         # Interface web
+│
+└── data/
+    └── instances.json     # Banco de dados das instâncias
 ```
 
 ## 🔧 Configuração
 
-### Caminhos padrão
+### Caminhos Padrão
 
-O sistema usa os seguintes caminhos:
+O programa busca o Telegram Desktop em:
+```
+C:\Users\[SEU_USUARIO]\AppData\Roaming\Telegram Desktop
+```
 
-- **Telegram Base**: `C:\Users\pugno\AppData\Roaming\Telegram Desktop`
-- **Instâncias**: `C:\Users\pugno\AppData\Roaming\Telegram_Instances`
+As instâncias são salvas em:
+```
+C:\Users\[SEU_USUARIO]\AppData\Roaming\Telegram_Instances
+```
 
-Se você usar outro usuário do Windows, **modifique estes caminhos** no arquivo `main.py`:
-
+Para alterar esses caminhos, edite as variáveis em `main.py`:
 ```python
-TELEGRAM_BASE = Path(r"C:\Users\SEU_USUARIO\AppData\Roaming\Telegram Desktop")
-INSTANCES_BASE = Path(r"C:\Users\SEU_USUARIO\AppData\Roaming\Telegram_Instances")
+TELEGRAM_BASE = Path(r"C:\Seu\Caminho\Telegram Desktop")
+INSTANCES_BASE = Path(r"C:\Seu\Caminho\Telegram_Instances")
 ```
 
-## 💡 Como Usar
+## 🎨 Recursos da Interface
 
-### Via Interface Web
+- **Dashboard intuitivo** - Veja todas as instâncias de uma vez
+- **Atualização automática** - Status atualiza a cada 3 segundos
+- **Notificações toast** - Feedback visual de todas as ações
+- **Design responsivo** - Funciona em qualquer tamanho de tela
+- **Animações suaves** - Transições e efeitos modernos
 
-1. Acesse http://localhost:8080
-2. Digite o nome da instância e clique em "Criar Instância"
-3. Aguarde a cópia da pasta (pode demorar alguns segundos)
-4. Use os botões para:
-   - ▶️ **Iniciar**: Abre o Telegram
-   - 📂 **Pasta**: Abre a pasta no Explorer
-   - ✏️ **Renomear**: Altera o nome
-   - 🗑️ **Excluir**: Remove a instância
+## 📊 API REST
 
-### Via API
+O projeto expõe uma API REST completa:
 
-```bash
-# Criar instância
-curl -X POST http://localhost:8080/instances \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Minha Instância"}'
+### Endpoints Principais
 
-# Listar instâncias
-curl http://localhost:8080/instances
-
-# Iniciar instância
-curl -X POST http://localhost:8080/instances/1/start
-
-# Renomear instância
-curl -X PUT http://localhost:8080/instances/1 \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Novo Nome"}'
-
-# Excluir instância
-curl -X DELETE http://localhost:8080/instances/1
+```
+GET    /instances              # Lista todas as instâncias
+POST   /instances              # Cria nova instância
+PUT    /instances/{id}         # Renomeia instância
+DELETE /instances/{id}         # Exclui instância
+POST   /instances/{id}/start   # Inicia Telegram
+POST   /instances/{id}/stop    # Para Telegram
+POST   /instances/{id}/open-folder  # Abre pasta
 ```
 
-## ⚠️ Observações Importantes
+Acesse a documentação completa em:
+```
+http://localhost:8080/docs
+```
 
-1. **Backup**: O sistema copia toda a pasta do Telegram. Se você tiver muitos dados (mídia, cache), a cópia pode demorar.
+## 🐛 Solução de Problemas
 
-2. **Espaço em disco**: Cada instância ocupa o mesmo espaço que sua pasta original do Telegram.
+### O programa não inicia
 
-3. **Dados separados**: Cada instância tem seus próprios dados, configurações e sessões completamente isolados.
-
-4. **Windows 11**: O sistema foi desenvolvido especificamente para Windows 11, mas deve funcionar em Windows 10.
-
-5. **Telegram Base**: É necessário ter o Telegram Desktop instalado e configurado antes de criar instâncias.
-
-## 🐛 Troubleshooting
+- Verifique se o Python está instalado: `python --version`
+- Instale as dependências: `pip install -r requirements.txt`
 
 ### "Pasta base do Telegram não encontrada"
+
 - Verifique se o Telegram Desktop está instalado
-- Confira se o caminho em `main.py` está correto para seu usuário
+- Confira o caminho em `main.py` (variável `TELEGRAM_BASE`)
 
-### "Erro ao criar instância"
-- Verifique se há espaço em disco suficiente
-- Certifique-se de que nenhum processo está bloqueando a pasta
-- Execute como administrador se necessário
+### Instância não inicia
 
-### "Erro ao iniciar Telegram"
 - Verifique se o arquivo `Telegram.exe` existe na pasta da instância
-- Tente abrir a pasta e executar manualmente para verificar o erro
+- Tente excluir e criar a instância novamente
 
-### Interface não carrega
-- Verifique se a pasta `web/` existe
-- Confirme se o arquivo `index.html` está presente
-- Tente acessar http://localhost:8080/docs para verificar se a API está funcionando
+### Porta já em uso
 
-## 📝 Logs
+- O programa encontra automaticamente uma porta livre (8080-8180)
+- Ou altere manualmente em `main.py` (variável `start_port`)
 
-O sistema exibe logs no console:
+## 🤝 Contribuindo
 
-```
-📦 Criando instância 1: Pugno Coder
-   Copiando de: C:\Users\pugno\AppData\Roaming\Telegram Desktop
-   Para: C:\Users\pugno\AppData\Roaming\Telegram_Instances\instance_1
-✅ Instância 1 criada com sucesso!
-🚀 Iniciando Telegram da instância 1: Pugno Coder
-✅ Telegram iniciado com sucesso!
-```
+Contribuições são bem-vindas! Sinta-se à vontade para:
 
-## 🔒 Segurança
+1. Fazer fork do projeto
+2. Criar uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
+3. Commit suas mudanças (`git commit -m 'Add: Minha nova feature'`)
+4. Push para a branch (`git push origin feature/MinhaFeature`)
+5. Abrir um Pull Request
 
-- O sistema roda apenas localmente (`localhost`)
-- Não há autenticação (use apenas em ambiente local/confiável)
-- Cada instância mantém suas próprias sessões do Telegram
+## 📝 Changelog
+
+### v1.0.0 (2026-01-16)
+
+- ✅ Sistema de criação de instâncias
+- ✅ Interface web completa
+- ✅ Iniciar/Parar instâncias
+- ✅ Status em tempo real
+- ✅ Histórico de última sessão
+- ✅ Renomear e excluir instâncias
+- ✅ Detecção automática de porta
+
+## ⚠️ Avisos Importantes
+
+- Esta ferramenta cria cópias completas do Telegram Desktop
+- Cada instância ocupa ~200-300MB de espaço
+- Use apenas para fins legítimos e pessoais
+- Respeite os termos de serviço do Telegram
 
 ## 📄 Licença
 
-Este projeto é de código aberto e pode ser usado livremente.
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
-## 🤝 Contribuições
+## 👨‍💻 Desenvolvedor
 
-Sinta-se à vontade para melhorar o código, adicionar funcionalidades ou reportar bugs!
+**Pugno**
+
+- Telegram: [@pugno_dev](https://t.me/pugno_dev)
+- GitHub: [@seu-usuario](https://github.com/seu-usuario)
 
 ---
 
-**Desenvolvido com ❤️ para facilitar o gerenciamento de múltiplas contas do Telegram**
+⭐ Se este projeto foi útil para você, considere dar uma estrela no GitHub!
+
+**Feito com ❤️ por Pugno**

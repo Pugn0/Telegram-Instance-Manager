@@ -12,6 +12,12 @@
         }
         .fade-in { animation: fadeIn 0.3s ease-out; }
         
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse { animation: pulse 2s ease-in-out infinite; }
+        
         .toast {
             position: fixed;
             top: 20px;
@@ -32,10 +38,17 @@
                     </h1>
                     <p class="text-gray-600">Gerencie múltiplas instâncias do Telegram Desktop</p>
                     <p class="text-sm text-gray-400 mt-1">🔌 Porta: <span id="currentPort" class="font-mono font-bold">...</span></p>
+                    <p class="text-xs text-gray-400 mt-2">
+                        👨‍💻 Desenvolvido por <span id="devCredit" class="font-semibold">...</span> • 
+                        <a id="devContact" href="#" target="_blank" class="text-blue-500 hover:text-blue-600 hover:underline">Contato</a>
+                    </p>
                 </div>
                 <div class="text-right">
                     <div class="text-sm text-gray-500">Total de instâncias</div>
                     <div id="totalCount" class="text-3xl font-bold text-indigo-600">0</div>
+                    <div class="text-xs text-green-600 mt-1">
+                        <span id="activeCount">0</span> ativas
+                    </div>
                 </div>
             </div>
         </div>
@@ -73,11 +86,24 @@
     </div>
 
     <script>
-        // Detecta automaticamente a porta atual
         const API_URL = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
         
-        // Mostra a porta no header
         document.getElementById('currentPort').textContent = window.location.port || '80';
+
+        // Estado anterior para detectar mudanças
+        let previousState = null;
+
+        const _0xa1b2c = {
+            x: 'VUhWbmJtOD0=',
+            y: 'YUhSMGNITTZMeTkwTG0xbEwzQjFaMjV2WDJSbGRnPT0='
+        };
+        
+        (function() {
+            try {
+                document.getElementById('devCredit').textContent = atob(atob(_0xa1b2c.x));
+                document.getElementById('devContact').href = atob(atob(_0xa1b2c.y));
+            } catch(e) {}
+        })();
 
         // Toast notification
         function showToast(message, type = 'info') {
@@ -112,13 +138,182 @@
             }, 3000);
         }
 
+        // Formatar data de última sessão
+        function formatLastSession(lastSession, isRunning) {
+            if (isRunning) {
+                return '<span class="text-green-600 font-semibold pulse">🟢 Ativo agora</span>';
+            }
+            
+            if (!lastSession) {
+                return '<span class="text-gray-400">Nunca iniciado</span>';
+            }
+            
+            const date = new Date(lastSession);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+            
+            let timeAgo;
+            if (diffMins < 1) {
+                timeAgo = 'agora há pouco';
+            } else if (diffMins < 60) {
+                timeAgo = `há ${diffMins} min`;
+            } else if (diffHours < 24) {
+                timeAgo = `há ${diffHours}h`;
+            } else if (diffDays < 7) {
+                timeAgo = `há ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
+            } else {
+                timeAgo = date.toLocaleDateString('pt-BR');
+            }
+            
+            return `<span class="text-gray-500">🕒 Visto por último: ${timeAgo}</span>`;
+        }
+
+        // Gerar HTML de uma instância
+        function generateInstanceHTML(inst) {
+            const statusIcon = inst.folder_exists && inst.telegram_exe_exists 
+                ? '<span class="text-green-500" title="OK">✅</span>' 
+                : '<span class="text-red-500" title="Pasta ou executável não encontrado">⚠️</span>';
+            
+            const lastSessionHtml = formatLastSession(inst.last_session, inst.is_running);
+            
+            const startStopButton = inst.is_running
+                ? `<button 
+                    onclick="stopInstance(${inst.id}, '${inst.name}')"
+                    class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-md"
+                    title="Parar Telegram"
+                >
+                    ⏹️ Parar
+                </button>`
+                : `<button 
+                    onclick="startInstance(${inst.id}, '${inst.name}')"
+                    class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors shadow-md"
+                    title="Iniciar Telegram"
+                    ${!inst.telegram_exe_exists ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''}
+                >
+                    ▶️ Iniciar
+                </button>`;
+            
+            return `
+            <div class="border-2 ${inst.is_running ? 'border-green-300 bg-green-50' : 'border-gray-200'} rounded-xl p-5 hover:border-indigo-300 transition-all duration-200" data-instance-id="${inst.id}">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            ${statusIcon}
+                            <span class="text-2xl font-bold text-indigo-600">#${inst.id}</span>
+                            <h3 class="text-xl font-semibold text-gray-800">${inst.name}</h3>
+                        </div>
+                        <p class="text-sm text-gray-500 mb-1">
+                            📁 ${inst.folder}
+                        </p>
+                        <p class="text-xs text-gray-400 mb-1">
+                            Criado em: ${new Date(inst.created_at).toLocaleString('pt-BR')}
+                        </p>
+                        <p class="text-xs">
+                            ${lastSessionHtml}
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        ${startStopButton}
+                        <button 
+                            onclick="openFolder(${inst.id})"
+                            class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors shadow-md"
+                            title="Abrir pasta"
+                        >
+                            📂
+                        </button>
+                        <button 
+                            onclick="renameInstance(${inst.id}, '${inst.name}')"
+                            class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition-colors shadow-md"
+                            title="Renomear"
+                        >
+                            ✏️
+                        </button>
+                        <button 
+                            onclick="deleteInstance(${inst.id}, '${inst.name}')"
+                            class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-md"
+                            title="Excluir"
+                        >
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // Comparar estados para detectar mudanças
+        function hasStateChanged(newInstances) {
+            if (!previousState || previousState.length !== newInstances.length) {
+                return true;
+            }
+
+            for (let i = 0; i < newInstances.length; i++) {
+                const prev = previousState[i];
+                const curr = newInstances[i];
+                
+                if (prev.id !== curr.id ||
+                    prev.name !== curr.name ||
+                    prev.is_running !== curr.is_running ||
+                    prev.last_session !== curr.last_session) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Atualizar apenas elementos que mudaram
+        function updateInstancesSmartly(instances) {
+            const container = document.getElementById('instancesList');
+            
+            instances.forEach(inst => {
+                const existingCard = container.querySelector(`[data-instance-id="${inst.id}"]`);
+                const newHTML = generateInstanceHTML(inst);
+                
+                if (!existingCard) {
+                    // Nova instância - adicionar
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newHTML;
+                    container.appendChild(tempDiv.firstElementChild);
+                } else {
+                    // Verificar se precisa atualizar
+                    const prevInst = previousState?.find(p => p.id === inst.id);
+                    
+                    if (!prevInst || 
+                        prevInst.is_running !== inst.is_running ||
+                        prevInst.last_session !== inst.last_session ||
+                        prevInst.name !== inst.name) {
+                        // Atualizar apenas este card
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = newHTML;
+                        existingCard.replaceWith(tempDiv.firstElementChild);
+                    }
+                }
+            });
+
+            // Remover instâncias que não existem mais
+            const allCards = container.querySelectorAll('[data-instance-id]');
+            allCards.forEach(card => {
+                const id = parseInt(card.getAttribute('data-instance-id'));
+                if (!instances.find(i => i.id === id)) {
+                    card.remove();
+                }
+            });
+        }
+
         // Carregar instâncias
         async function loadInstances() {
             try {
                 const response = await fetch(`${API_URL}/instances`);
                 const instances = await response.json();
                 
+                const activeCount = instances.filter(i => i.is_running).length;
+                
+                // Atualizar contadores
                 document.getElementById('totalCount').textContent = instances.length;
+                document.getElementById('activeCount').textContent = activeCount;
                 
                 const container = document.getElementById('instancesList');
                 
@@ -130,64 +325,16 @@
                             <p class="text-sm">Crie sua primeira instância acima!</p>
                         </div>
                     `;
+                    previousState = null;
                     return;
                 }
 
-                container.innerHTML = instances.map(inst => {
-                    const statusIcon = inst.folder_exists && inst.telegram_exe_exists 
-                        ? '<span class="text-green-500" title="OK">✅</span>' 
-                        : '<span class="text-red-500" title="Pasta ou executável não encontrado">⚠️</span>';
-                    
-                    return `
-                    <div class="border-2 border-gray-200 rounded-xl p-5 hover:border-indigo-300 transition-all duration-200 fade-in">
-                        <div class="flex items-center justify-between">
-                            <div class="flex-1">
-                                <div class="flex items-center gap-3 mb-2">
-                                    ${statusIcon}
-                                    <span class="text-2xl font-bold text-indigo-600">#${inst.id}</span>
-                                    <h3 class="text-xl font-semibold text-gray-800">${inst.name}</h3>
-                                </div>
-                                <p class="text-sm text-gray-500 mb-1">
-                                    📁 ${inst.folder}
-                                </p>
-                                <p class="text-xs text-gray-400">
-                                    Criado em: ${new Date(inst.created_at).toLocaleString('pt-BR')}
-                                </p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button 
-                                    onclick="startInstance(${inst.id}, '${inst.name}')"
-                                    class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors shadow-md"
-                                    title="Iniciar Telegram"
-                                    ${!inst.telegram_exe_exists ? 'disabled opacity-50 cursor-not-allowed' : ''}
-                                >
-                                    ▶️ Iniciar
-                                </button>
-                                <button 
-                                    onclick="openFolder(${inst.id})"
-                                    class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors shadow-md"
-                                    title="Abrir pasta"
-                                >
-                                    📂
-                                </button>
-                                <button 
-                                    onclick="renameInstance(${inst.id}, '${inst.name}')"
-                                    class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition-colors shadow-md"
-                                    title="Renomear"
-                                >
-                                    ✏️
-                                </button>
-                                <button 
-                                    onclick="deleteInstance(${inst.id}, '${inst.name}')"
-                                    class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-md"
-                                    title="Excluir"
-                                >
-                                    🗑️
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `}).join('');
+                // Verificar se houve mudanças antes de atualizar
+                if (hasStateChanged(instances)) {
+                    updateInstancesSmartly(instances);
+                    previousState = JSON.parse(JSON.stringify(instances));
+                }
+
             } catch (error) {
                 console.error('Erro ao carregar instâncias:', error);
                 showToast('Erro ao carregar instâncias', 'error');
@@ -221,7 +368,10 @@
                 const instance = await response.json();
                 nameInput.value = '';
                 showToast(`Instância "${instance.name}" criada com sucesso!`, 'success');
-                loadInstances();
+                
+                // Forçar atualização imediata
+                previousState = null;
+                await loadInstances();
             } catch (error) {
                 console.error('Erro ao criar instância:', error);
                 showToast(error.message, 'error');
@@ -243,8 +393,37 @@
                 }
 
                 showToast(`Telegram "${name}" iniciado!`, 'success');
+                
+                // Atualizar imediatamente
+                previousState = null;
+                await loadInstances();
             } catch (error) {
                 console.error('Erro ao iniciar instância:', error);
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Parar instância
+        async function stopInstance(id, name) {
+            try {
+                showToast(`Parando "${name}"...`, 'info');
+                
+                const response = await fetch(`${API_URL}/instances/${id}/stop`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Erro ao parar instância');
+                }
+
+                showToast(`Telegram "${name}" parado!`, 'success');
+                
+                // Atualizar imediatamente
+                previousState = null;
+                await loadInstances();
+            } catch (error) {
+                console.error('Erro ao parar instância:', error);
                 showToast(error.message, 'error');
             }
         }
@@ -287,7 +466,10 @@
                 }
 
                 showToast('Instância renomeada com sucesso!', 'success');
-                loadInstances();
+                
+                // Atualizar imediatamente
+                previousState = null;
+                await loadInstances();
             } catch (error) {
                 console.error('Erro ao renomear instância:', error);
                 showToast(error.message, 'error');
@@ -313,7 +495,10 @@
                 }
 
                 showToast(`Instância "${name}" excluída!`, 'success');
-                loadInstances();
+                
+                // Atualizar imediatamente
+                previousState = null;
+                await loadInstances();
             } catch (error) {
                 console.error('Erro ao excluir instância:', error);
                 showToast(error.message, 'error');
@@ -323,8 +508,8 @@
         // Carregar instâncias ao iniciar
         loadInstances();
         
-        // Recarregar a cada 5 segundos
-        setInterval(loadInstances, 5000);
+        // Recarregar a cada 3 segundos de forma inteligente
+        setInterval(loadInstances, 3000);
     </script>
 </body>
 </html>

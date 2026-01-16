@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import webbrowser
 import socket
+import psutil
 from datetime import datetime
 from pathlib import Path
 import threading
@@ -50,19 +51,31 @@ def find_free_port(start_port=8080, max_attempts=100):
     """Encontra uma porta disponível a partir de start_port"""
     for port in range(start_port, start_port + max_attempts):
         try:
-            # Tenta criar um socket na porta
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(1)
             result = sock.connect_ex(('localhost', port))
             sock.close()
             
-            # Se connect_ex retorna != 0, a porta está livre
             if result != 0:
                 return port
         except:
             continue
     
     raise Exception(f"Nenhuma porta disponível entre {start_port} e {start_port + max_attempts}")
+
+def is_telegram_running(instance_folder):
+    """Verifica se o Telegram desta instância está rodando"""
+    instance_folder = str(instance_folder)
+    
+    for proc in psutil.process_iter(['pid', 'name', 'exe']):
+        try:
+            if proc.info['name'] and 'telegram' in proc.info['name'].lower():
+                if proc.info['exe'] and instance_folder.lower() in proc.info['exe'].lower():
+                    return True, proc.info['pid']
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+    
+    return False, None
 
 def load_instances():
     """Carrega instâncias do arquivo JSON"""
@@ -107,12 +120,18 @@ def health_check():
 
 @app.get("/instances")
 def list_instances():
-    """Lista todas as instâncias"""
+    """Lista todas as instâncias com status de execução"""
     instances = load_instances()
-    # Adicionar status de pasta existente
+    
     for inst in instances:
         inst['folder_exists'] = Path(inst['folder']).exists()
         inst['telegram_exe_exists'] = (Path(inst['folder']) / "Telegram.exe").exists()
+        
+        # Verificar se está rodando
+        is_running, pid = is_telegram_running(inst['folder'])
+        inst['is_running'] = is_running
+        inst['pid'] = pid
+    
     return instances
 
 @app.post("/instances")
@@ -127,21 +146,19 @@ def create_instance(data: InstanceCreate):
     instances = load_instances()
     new_id = get_next_id(instances)
     
-    # Criar pasta da nova instância
     instance_folder = INSTANCES_BASE / f"instance_{new_id}"
     
     try:
         print(f"📦 Criando instância #{new_id}: {data.name}")
         
-        # Copiar pasta base
         shutil.copytree(TELEGRAM_BASE, instance_folder)
         
-        # Criar registro da instância
         new_instance = {
             "id": new_id,
             "name": data.name,
             "folder": str(instance_folder),
             "created_at": datetime.now().isoformat(),
+            "last_session": None,
             "folder_exists": True,
             "telegram_exe_exists": True
         }
@@ -153,7 +170,6 @@ def create_instance(data: InstanceCreate):
         return new_instance
         
     except Exception as e:
-        # Limpar pasta se houver erro
         if instance_folder.exists():
             shutil.rmtree(instance_folder, ignore_errors=True)
         print(f"❌ Erro ao criar instância: {e}")
@@ -183,13 +199,21 @@ def delete_instance(instance_id: int):
         if inst['id'] == instance_id:
             folder = Path(inst['folder'])
             
+            # Verificar se está rodando e encerrar
+            is_running, pid = is_telegram_running(folder)
+            if is_running and pid:
+                try:
+                    proc = psutil.Process(pid)
+                    proc.terminate()
+                    proc.wait(timeout=5)
+                except:
+                    pass
+            
             try:
-                # Remover pasta
                 if folder.exists():
                     print(f"🗑️ Excluindo #{instance_id}: {inst['name']}")
                     shutil.rmtree(folder)
                 
-                # Remover do JSON
                 instances.pop(i)
                 save_instances(instances)
                 
@@ -220,11 +244,19 @@ def start_instance(instance_id: int):
                     detail=f"Telegram.exe não encontrado em: {exe_path}"
                 )
             
+            # Verificar se já está rodando
+            is_running, _ = is_telegram_running(inst['folder'])
+            if is_running:
+                return {"message": f"Telegram já está em execução: {inst['name']}"}
+            
             try:
                 print(f"🚀 Iniciando #{instance_id}: {inst['name']}")
                 
-                # Iniciar processo
                 subprocess.Popen([str(exe_path)], cwd=str(exe_path.parent))
+                
+                # Atualizar última sessão
+                inst['last_session'] = datetime.now().isoformat()
+                save_instances(instances)
                 
                 return {"message": f"Telegram iniciado: {inst['name']}"}
                 
@@ -233,6 +265,48 @@ def start_instance(instance_id: int):
                 raise HTTPException(
                     status_code=500, 
                     detail=f"Erro ao iniciar Telegram: {str(e)}"
+                )
+    
+    raise HTTPException(status_code=404, detail="Instância não encontrada")
+
+@app.post("/instances/{instance_id}/stop")
+def stop_instance(instance_id: int):
+    """Para o Telegram de uma instância"""
+    instances = load_instances()
+    
+    for inst in instances:
+        if inst['id'] == instance_id:
+            is_running, pid = is_telegram_running(inst['folder'])
+            
+            if not is_running:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Telegram não está em execução"
+                )
+            
+            try:
+                print(f"🛑 Parando #{instance_id}: {inst['name']}")
+                
+                proc = psutil.Process(pid)
+                proc.terminate()
+                
+                # Aguardar encerramento
+                try:
+                    proc.wait(timeout=5)
+                except psutil.TimeoutExpired:
+                    proc.kill()
+                
+                # Atualizar última sessão
+                inst['last_session'] = datetime.now().isoformat()
+                save_instances(instances)
+                
+                return {"message": f"Telegram parado: {inst['name']}"}
+                
+            except Exception as e:
+                print(f"❌ Erro ao parar: {e}")
+                raise HTTPException(
+                    status_code=500, 
+                    detail=f"Erro ao parar Telegram: {str(e)}"
                 )
     
     raise HTTPException(status_code=404, detail="Instância não encontrada")
@@ -274,11 +348,9 @@ if __name__ == "__main__":
     import uvicorn
     import logging
     
-    # Configurar logging - silenciar Uvicorn
     logging.getLogger("uvicorn").setLevel(logging.WARNING)
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     
-    # Encontrar porta disponível
     try:
         port = find_free_port(8080)
         url = f"http://localhost:{port}"
@@ -296,15 +368,14 @@ if __name__ == "__main__":
         print("💡 Pressione CTRL+C para parar o servidor")
         print("=" * 60)
         
-        # Abrir navegador em thread separada
         threading.Thread(target=open_browser, args=(url,), daemon=True).start()
         
         uvicorn.run(
             app, 
             host="0.0.0.0", 
             port=port,
-            log_level="warning",  # Apenas warnings e erros
-            access_log=False      # Desativa log de acesso
+            log_level="warning",
+            access_log=False
         )
         
     except KeyboardInterrupt:
