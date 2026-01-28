@@ -335,6 +335,15 @@ def open_folder(instance_id: int):
     
     raise HTTPException(status_code=404, detail="Instância não encontrada")
 
+# Servir favicon
+@app.get("/logo.ico")
+def serve_favicon():
+    """Serve o favicon"""
+    favicon_path = BASE_DIR / "logo.ico"
+    if favicon_path.exists():
+        return FileResponse(favicon_path)
+    raise HTTPException(status_code=404, detail="Favicon não encontrado")
+
 # Servir frontend
 @app.get("/")
 def serve_frontend():

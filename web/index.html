@@ -4,95 +4,444 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telegram Instance Manager</title>
+    <link rel="icon" type="image/x-icon" href="/logo.ico">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        :root,
+        [data-theme="light"] {
+            /* Light Theme - Modern & Clean */
+            --bg-primary: #fafafa;
+            --bg-secondary: #ffffff;
+            --bg-card: rgba(255, 255, 255, 0.8);
+            --bg-card-hover: rgba(255, 255, 255, 0.95);
+            --text-primary: #0a0a0a;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+            --border-color: #e5e7eb;
+            --border-hover: #d1d5db;
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --primary-light: rgba(16, 185, 129, 0.1);
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.18);
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme - ChatGPT/Vercel inspired */
+            --bg-primary: #171717;
+            --bg-secondary: #1f1f1f;
+            --bg-card: rgba(31, 31, 31, 0.6);
+            --bg-card-hover: rgba(31, 31, 31, 0.8);
+            --text-primary: #fafafa;
+            --text-secondary: #a3a3a3;
+            --text-tertiary: #737373;
+            --border-color: #2a2a2a;
+            --border-hover: #404040;
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --primary-light: rgba(16, 185, 129, 0.15);
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+            --glass-bg: rgba(31, 31, 31, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .glass-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        /* Modern Card */
+        .modern-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .modern-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        /* Primary Button */
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3), 0 2px 4px -1px rgba(16, 185, 129, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* Secondary/Ghost Button */
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card);
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+
+        /* Icon Button */
+        .btn-icon {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+            border-radius: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        /* Input */
+        .modern-input {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modern-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .modern-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--primary);
+        }
+
+        .status-inactive {
+            background: var(--bg-card);
+            color: var(--text-tertiary);
+        }
+
+        /* Layout */
+        .layout-list .instances-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .layout-grid .instances-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .layout-grid .instances-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        
+
+        .fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
         }
-        .pulse { animation: pulse 2s ease-in-out infinite; }
-        
+
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* Toast */
         .toast {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 24px;
+            right: 24px;
             z-index: 1000;
             max-width: 400px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-xl);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* Smooth transitions */
+        * {
+            transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+
+        /* Instance Card */
+        .instance-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .instance-card.active {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        /* Typography */
+        h1, h2, h3 {
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-hover);
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <!-- Header -->
-        <div class="bg-white rounded-2xl shadow-xl p-8 mb-6 fade-in">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-4xl font-bold text-gray-800 mb-2">
-                        📱 Telegram Instance Manager
-                    </h1>
-                    <p class="text-gray-600">Gerencie múltiplas instâncias do Telegram Desktop</p>
-                    <p class="text-sm text-gray-400 mt-1">🔌 Porta: <span id="currentPort" class="font-mono font-bold">...</span></p>
-                    <p class="text-xs text-gray-400 mt-2">
-                        👨‍💻 Desenvolvido por <span id="devCredit" class="font-semibold">...</span> • 
-                        <a id="devContact" href="#" target="_blank" class="text-blue-500 hover:text-blue-600 hover:underline">Contato</a>
-                    </p>
-                </div>
-                <div class="text-right">
-                    <div class="text-sm text-gray-500">Total de instâncias</div>
-                    <div id="totalCount" class="text-3xl font-bold text-indigo-600">0</div>
-                    <div class="text-xs text-green-600 mt-1">
-                        <span id="activeCount">0</span> ativas
+<body class="layout-grid">
+    <div class="min-h-screen pb-12">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <!-- Header -->
+            <div class="glass-card rounded-2xl p-8 mb-6 fade-in">
+                <div class="flex items-start justify-between mb-6">
+                    <div class="flex-1">
+                        <h1 class="text-3xl font-semibold mb-2" style="color: var(--text-primary);">
+                            Telegram Instances
+                        </h1>
+                        <p class="text-sm" style="color: var(--text-secondary);">
+                            Manage multiple Telegram Desktop instances
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <!-- Stats -->
+                        <div class="text-right mr-4">
+                            <div class="text-xs font-medium mb-1" style="color: var(--text-tertiary);">Total</div>
+                            <div id="totalCount" class="text-2xl font-semibold" style="color: var(--primary);">0</div>
+                            <div class="text-xs mt-1" style="color: var(--text-secondary);">
+                                <span id="activeCount" style="color: var(--primary);">0</span> active
+                            </div>
+                        </div>
+                        <!-- Controls -->
+                        <div class="flex items-center gap-2">
+                            <button
+                                id="layoutToggle"
+                                onclick="toggleLayout()"
+                                class="btn-icon w-9 h-9"
+                                title="Toggle layout"
+                            >
+                                <span id="layoutIcon">☰</span>
+                            </button>
+                            <button
+                                id="themeToggle"
+                                onclick="toggleTheme()"
+                                class="btn-icon w-9 h-9"
+                                title="Toggle theme"
+                            >
+                                <span id="themeIcon">☀️</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
+                <div class="flex items-center gap-2 text-xs" style="color: var(--text-tertiary);">
+                    <span>Port:</span>
+                    <span id="currentPort" class="font-mono font-medium">...</span>
+                    <span class="mx-2">•</span>
+                    <span>Dev:</span>
+                    <span id="devCredit" class="font-medium">...</span>
+                    <span class="mx-2">•</span>
+                    <a id="devContact" href="#" target="_blank" class="hover:underline" style="color: var(--primary);">Contact</a>
+                </div>
+            </div>
+
+            <!-- Create Instance -->
+            <div class="modern-card p-6 mb-6 fade-in">
+                <div class="flex items-center gap-3">
+                    <input
+                        type="text"
+                        id="newInstanceName"
+                        placeholder="Instance name (e.g., Work Account)"
+                        class="modern-input flex-1 px-4 py-2.5 text-sm"
+                        onkeypress="if(event.key==='Enter') createInstance()"
+                    />
+                    <button
+                        onclick="createInstance()"
+                        class="btn-primary px-5 py-2.5 text-sm font-medium"
+                    >
+                        Create
+                    </button>
+                </div>
+            </div>
+
+            <!-- Instances Grid -->
+            <div class="modern-card p-6 fade-in">
+                <div id="instancesList" class="instances-container">
+                    <!-- Instances will be loaded here -->
+                </div>
             </div>
         </div>
-
-        <!-- Nova Instância -->
-        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 fade-in">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">➕ Criar Nova Instância</h2>
-            <div class="flex gap-3">
-                <input 
-                    type="text" 
-                    id="newInstanceName" 
-                    placeholder="Nome da instância (ex: Pugno Coder)"
-                    class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
-                    onkeypress="if(event.key==='Enter') createInstance()"
-                />
-                <button 
-                    onclick="createInstance()"
-                    class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition-colors duration-200"
-                >
-                    Criar Instância
-                </button>
-            </div>
-        </div>
-
-        <!-- Lista de Instâncias -->
-        <div class="bg-white rounded-2xl shadow-xl p-6 fade-in">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">📋 Instâncias</h2>
-            <div id="instancesList" class="space-y-3">
-                <!-- Instances will be loaded here -->
-            </div>
-        </div>
-
-        <!-- Toast Container -->
-        <div id="toastContainer"></div>
     </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
 
     <script>
         const API_URL = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
         
         document.getElementById('currentPort').textContent = window.location.port || '80';
 
-        // Estado anterior para detectar mudanças
         let previousState = null;
 
+        // Theme Management
+        let currentTheme = localStorage.getItem('theme') || 'dark';
+        let currentLayout = localStorage.getItem('layout') || 'grid';
+
+        function initTheme() {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            updateThemeUI();
+        }
+
+        function initLayout() {
+            document.body.className = document.body.className.replace(/layout-\w+/g, '');
+            document.body.classList.add(`layout-${currentLayout}`);
+            updateLayoutUI();
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', currentTheme);
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            updateThemeUI();
+        }
+
+        function updateThemeUI() {
+            const themeIcon = document.getElementById('themeIcon');
+            themeIcon.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+        }
+
+        function toggleLayout() {
+            currentLayout = currentLayout === 'list' ? 'grid' : 'list';
+            localStorage.setItem('layout', currentLayout);
+            document.body.className = document.body.className.replace(/layout-\w+/g, '');
+            document.body.classList.add(`layout-${currentLayout}`);
+            updateLayoutUI();
+            if (previousState) {
+                previousState = null;
+                loadInstances();
+            }
+        }
+
+        function updateLayoutUI() {
+            const layoutIcon = document.getElementById('layoutIcon');
+            layoutIcon.textContent = currentLayout === 'grid' ? '☰' : '⊞';
+        }
+
+        // Initialize
+        initTheme();
+        initLayout();
+
+        // Dev credit
         const _0xa1b2c = {
             x: 'VUhWbmJtOD0=',
             y: 'YUhSMGNITTZMeTkwTG0xbEwzQjFaMjV2WDJSbGRnPT0='
@@ -107,25 +456,28 @@
 
         // Toast notification
         function showToast(message, type = 'info') {
-            const colors = {
-                success: 'bg-green-500',
-                error: 'bg-red-500',
-                info: 'bg-blue-500',
-                warning: 'bg-yellow-500'
+            const icons = {
+                success: '✓',
+                error: '✕',
+                info: 'ℹ',
+                warning: '⚠'
             };
 
-            const icons = {
-                success: '✅',
-                error: '❌',
-                info: 'ℹ️',
-                warning: '⚠️'
+            const colors = {
+                success: 'var(--primary)',
+                error: '#ef4444',
+                info: '#3b82f6',
+                warning: '#f59e0b'
             };
 
             const toast = document.createElement('div');
-            toast.className = `toast ${colors[type]} text-white px-6 py-4 rounded-lg shadow-2xl fade-in flex items-center gap-3`;
+            toast.className = 'toast fade-in p-4 flex items-center gap-3';
+            toast.style.color = 'var(--text-primary)';
             toast.innerHTML = `
-                <span class="text-2xl">${icons[type]}</span>
-                <span class="font-medium">${message}</span>
+                <div class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-semibold" style="background: ${colors[type]};">
+                    ${icons[type]}
+                </div>
+                <span class="text-sm font-medium">${message}</span>
             `;
 
             document.getElementById('toastContainer').appendChild(toast);
@@ -138,14 +490,17 @@
             }, 3000);
         }
 
-        // Formatar data de última sessão
+        window.toggleTheme = toggleTheme;
+        window.toggleLayout = toggleLayout;
+
+        // Format last session
         function formatLastSession(lastSession, isRunning) {
             if (isRunning) {
-                return '<span class="text-green-600 font-semibold pulse">🟢 Ativo agora</span>';
+                return '<span class="status-badge status-active pulse">● Active</span>';
             }
             
             if (!lastSession) {
-                return '<span class="text-gray-400">Nunca iniciado</span>';
+                return '<span class="status-badge status-inactive">Never started</span>';
             }
             
             const date = new Date(lastSession);
@@ -157,84 +512,90 @@
             
             let timeAgo;
             if (diffMins < 1) {
-                timeAgo = 'agora há pouco';
+                timeAgo = 'just now';
             } else if (diffMins < 60) {
-                timeAgo = `há ${diffMins} min`;
+                timeAgo = `${diffMins}m ago`;
             } else if (diffHours < 24) {
-                timeAgo = `há ${diffHours}h`;
+                timeAgo = `${diffHours}h ago`;
             } else if (diffDays < 7) {
-                timeAgo = `há ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
+                timeAgo = `${diffDays}d ago`;
             } else {
-                timeAgo = date.toLocaleDateString('pt-BR');
+                timeAgo = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             }
             
-            return `<span class="text-gray-500">🕒 Visto por último: ${timeAgo}</span>`;
+            return `<span class="status-badge status-inactive">${timeAgo}</span>`;
         }
 
-        // Gerar HTML de uma instância
+        // Generate instance HTML
         function generateInstanceHTML(inst) {
+            const isGrid = currentLayout === 'grid';
             const statusIcon = inst.folder_exists && inst.telegram_exe_exists 
-                ? '<span class="text-green-500" title="OK">✅</span>' 
-                : '<span class="text-red-500" title="Pasta ou executável não encontrado">⚠️</span>';
+                ? '<div class="w-2 h-2 rounded-full" style="background: var(--primary);"></div>' 
+                : '<div class="w-2 h-2 rounded-full" style="background: #ef4444;"></div>';
             
             const lastSessionHtml = formatLastSession(inst.last_session, inst.is_running);
             
             const startStopButton = inst.is_running
                 ? `<button 
                     onclick="stopInstance(${inst.id}, '${inst.name}')"
-                    class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-md"
-                    title="Parar Telegram"
+                    class="btn-secondary px-3 py-1.5 text-xs font-medium"
+                    title="Stop Telegram"
                 >
-                    ⏹️ Parar
+                    Stop
                 </button>`
                 : `<button 
                     onclick="startInstance(${inst.id}, '${inst.name}')"
-                    class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors shadow-md"
-                    title="Iniciar Telegram"
+                    class="btn-primary px-3 py-1.5 text-xs font-medium"
+                    title="Start Telegram"
                     ${!inst.telegram_exe_exists ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''}
                 >
-                    ▶️ Iniciar
+                    Start
                 </button>`;
             
+            const cardClass = `instance-card modern-card p-5 ${inst.is_running ? 'active' : ''}`;
+            const contentClass = isGrid 
+                ? 'flex flex-col gap-4' 
+                : 'flex items-center justify-between gap-6';
+            
             return `
-            <div class="border-2 ${inst.is_running ? 'border-green-300 bg-green-50' : 'border-gray-200'} rounded-xl p-5 hover:border-indigo-300 transition-all duration-200" data-instance-id="${inst.id}">
-                <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-3 mb-2">
+            <div class="${cardClass}" data-instance-id="${inst.id}">
+                <div class="${contentClass}">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-3">
                             ${statusIcon}
-                            <span class="text-2xl font-bold text-indigo-600">#${inst.id}</span>
-                            <h3 class="text-xl font-semibold text-gray-800">${inst.name}</h3>
+                            <span class="text-xs font-semibold" style="color: var(--primary);">#${inst.id}</span>
+                            <h3 class="text-base font-semibold truncate" style="color: var(--text-primary);">${inst.name}</h3>
                         </div>
-                        <p class="text-sm text-gray-500 mb-1">
-                            📁 ${inst.folder}
+                        <p class="text-xs mb-2 truncate" style="color: var(--text-secondary);" title="${inst.folder}">
+                            ${inst.folder}
                         </p>
-                        <p class="text-xs text-gray-400 mb-1">
-                            Criado em: ${new Date(inst.created_at).toLocaleString('pt-BR')}
-                        </p>
-                        <p class="text-xs">
+                        <div class="flex items-center gap-2 flex-wrap">
                             ${lastSessionHtml}
-                        </p>
+                            <span class="text-xs" style="color: var(--text-tertiary);">
+                                ${new Date(inst.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                        </div>
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex items-center gap-2 ${isGrid ? 'justify-start' : 'justify-end'} flex-shrink-0">
                         ${startStopButton}
                         <button 
                             onclick="openFolder(${inst.id})"
-                            class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors shadow-md"
-                            title="Abrir pasta"
+                            class="btn-icon w-8 h-8 text-sm"
+                            title="Open folder"
                         >
                             📂
                         </button>
                         <button 
                             onclick="renameInstance(${inst.id}, '${inst.name}')"
-                            class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition-colors shadow-md"
-                            title="Renomear"
+                            class="btn-icon w-8 h-8 text-sm"
+                            title="Rename"
                         >
                             ✏️
                         </button>
                         <button 
                             onclick="deleteInstance(${inst.id}, '${inst.name}')"
-                            class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-md"
-                            title="Excluir"
+                            class="btn-icon w-8 h-8 text-sm"
+                            title="Delete"
                         >
                             🗑️
                         </button>
@@ -243,7 +604,7 @@
             </div>`;
         }
 
-        // Comparar estados para detectar mudanças
+        // State comparison
         function hasStateChanged(newInstances) {
             if (!previousState || previousState.length !== newInstances.length) {
                 return true;
@@ -264,7 +625,7 @@
             return false;
         }
 
-        // Atualizar apenas elementos que mudaram
+        // Smart update
         function updateInstancesSmartly(instances) {
             const container = document.getElementById('instancesList');
             
@@ -273,19 +634,18 @@
                 const newHTML = generateInstanceHTML(inst);
                 
                 if (!existingCard) {
-                    // Nova instância - adicionar
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = newHTML;
-                    container.appendChild(tempDiv.firstElementChild);
+                    const newCard = tempDiv.firstElementChild;
+                    newCard.classList.add('fade-in');
+                    container.appendChild(newCard);
                 } else {
-                    // Verificar se precisa atualizar
                     const prevInst = previousState?.find(p => p.id === inst.id);
                     
                     if (!prevInst || 
                         prevInst.is_running !== inst.is_running ||
                         prevInst.last_session !== inst.last_session ||
                         prevInst.name !== inst.name) {
-                        // Atualizar apenas este card
                         const tempDiv = document.createElement('div');
                         tempDiv.innerHTML = newHTML;
                         existingCard.replaceWith(tempDiv.firstElementChild);
@@ -293,7 +653,6 @@
                 }
             });
 
-            // Remover instâncias que não existem mais
             const allCards = container.querySelectorAll('[data-instance-id]');
             allCards.forEach(card => {
                 const id = parseInt(card.getAttribute('data-instance-id'));
@@ -303,7 +662,7 @@
             });
         }
 
-        // Carregar instâncias
+        // Load instances
         async function loadInstances() {
             try {
                 const response = await fetch(`${API_URL}/instances`);
@@ -311,7 +670,6 @@
                 
                 const activeCount = instances.filter(i => i.is_running).length;
                 
-                // Atualizar contadores
                 document.getElementById('totalCount').textContent = instances.length;
                 document.getElementById('activeCount').textContent = activeCount;
                 
@@ -319,40 +677,39 @@
                 
                 if (instances.length === 0) {
                     container.innerHTML = `
-                        <div class="text-center py-12 text-gray-500">
-                            <div class="text-6xl mb-4">🔭</div>
-                            <p class="text-lg">Nenhuma instância criada ainda</p>
-                            <p class="text-sm">Crie sua primeira instância acima!</p>
+                        <div class="text-center py-16 col-span-full">
+                            <div class="text-5xl mb-4 opacity-50">🔭</div>
+                            <p class="text-sm font-medium mb-1" style="color: var(--text-primary);">No instances yet</p>
+                            <p class="text-xs" style="color: var(--text-tertiary);">Create your first instance above</p>
                         </div>
                     `;
                     previousState = null;
                     return;
                 }
 
-                // Verificar se houve mudanças antes de atualizar
                 if (hasStateChanged(instances)) {
                     updateInstancesSmartly(instances);
                     previousState = JSON.parse(JSON.stringify(instances));
                 }
 
             } catch (error) {
-                console.error('Erro ao carregar instâncias:', error);
-                showToast('Erro ao carregar instâncias', 'error');
+                console.error('Error loading instances:', error);
+                showToast('Error loading instances', 'error');
             }
         }
 
-        // Criar instância
+        // Create instance
         async function createInstance() {
             const nameInput = document.getElementById('newInstanceName');
             const name = nameInput.value.trim();
 
             if (!name) {
-                showToast('Digite um nome para a instância', 'warning');
+                showToast('Enter an instance name', 'warning');
                 return;
             }
 
             try {
-                showToast('Criando instância... Aguarde!', 'info');
+                showToast('Creating instance...', 'info');
                 
                 const response = await fetch(`${API_URL}/instances`, {
                     method: 'POST',
@@ -362,26 +719,25 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || 'Erro ao criar instância');
+                    throw new Error(error.detail || 'Error creating instance');
                 }
 
                 const instance = await response.json();
                 nameInput.value = '';
-                showToast(`Instância "${instance.name}" criada com sucesso!`, 'success');
+                showToast(`Instance "${instance.name}" created!`, 'success');
                 
-                // Forçar atualização imediata
                 previousState = null;
                 await loadInstances();
             } catch (error) {
-                console.error('Erro ao criar instância:', error);
+                console.error('Error creating instance:', error);
                 showToast(error.message, 'error');
             }
         }
 
-        // Iniciar instância
+        // Start instance
         async function startInstance(id, name) {
             try {
-                showToast(`Iniciando "${name}"...`, 'info');
+                showToast(`Starting "${name}"...`, 'info');
                 
                 const response = await fetch(`${API_URL}/instances/${id}/start`, {
                     method: 'POST'
@@ -389,24 +745,23 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || 'Erro ao iniciar instância');
+                    throw new Error(error.detail || 'Error starting instance');
                 }
 
-                showToast(`Telegram "${name}" iniciado!`, 'success');
+                showToast(`Telegram "${name}" started!`, 'success');
                 
-                // Atualizar imediatamente
                 previousState = null;
                 await loadInstances();
             } catch (error) {
-                console.error('Erro ao iniciar instância:', error);
+                console.error('Error starting instance:', error);
                 showToast(error.message, 'error');
             }
         }
 
-        // Parar instância
+        // Stop instance
         async function stopInstance(id, name) {
             try {
-                showToast(`Parando "${name}"...`, 'info');
+                showToast(`Stopping "${name}"...`, 'info');
                 
                 const response = await fetch(`${API_URL}/instances/${id}/stop`, {
                     method: 'POST'
@@ -414,21 +769,20 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || 'Erro ao parar instância');
+                    throw new Error(error.detail || 'Error stopping instance');
                 }
 
-                showToast(`Telegram "${name}" parado!`, 'success');
+                showToast(`Telegram "${name}" stopped!`, 'success');
                 
-                // Atualizar imediatamente
                 previousState = null;
                 await loadInstances();
             } catch (error) {
-                console.error('Erro ao parar instância:', error);
+                console.error('Error stopping instance:', error);
                 showToast(error.message, 'error');
             }
         }
 
-        // Abrir pasta
+        // Open folder
         async function openFolder(id) {
             try {
                 const response = await fetch(`${API_URL}/instances/${id}/open-folder`, {
@@ -437,19 +791,19 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || 'Erro ao abrir pasta');
+                    throw new Error(error.detail || 'Error opening folder');
                 }
 
-                showToast('Pasta aberta no Explorer!', 'success');
+                showToast('Folder opened!', 'success');
             } catch (error) {
-                console.error('Erro ao abrir pasta:', error);
+                console.error('Error opening folder:', error);
                 showToast(error.message, 'error');
             }
         }
 
-        // Renomear instância
+        // Rename instance
         async function renameInstance(id, currentName) {
-            const newName = prompt('Digite o novo nome:', currentName);
+            const newName = prompt('Enter new name:', currentName);
             
             if (!newName || newName === currentName) return;
 
@@ -462,28 +816,27 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || 'Erro ao renomear instância');
+                    throw new Error(error.detail || 'Error renaming instance');
                 }
 
-                showToast('Instância renomeada com sucesso!', 'success');
+                showToast('Instance renamed!', 'success');
                 
-                // Atualizar imediatamente
                 previousState = null;
                 await loadInstances();
             } catch (error) {
-                console.error('Erro ao renomear instância:', error);
+                console.error('Error renaming instance:', error);
                 showToast(error.message, 'error');
             }
         }
 
-        // Excluir instância
+        // Delete instance
         async function deleteInstance(id, name) {
-            if (!confirm(`Tem certeza que deseja excluir a instância "${name}"?\n\nA pasta será removida permanentemente!`)) {
+            if (!confirm(`Delete instance "${name}"?\n\nThe folder will be permanently removed!`)) {
                 return;
             }
 
             try {
-                showToast('Excluindo instância...', 'info');
+                showToast('Deleting instance...', 'info');
                 
                 const response = await fetch(`${API_URL}/instances/${id}`, {
                     method: 'DELETE'
@@ -491,24 +844,23 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.detail || 'Erro ao excluir instância');
+                    throw new Error(error.detail || 'Error deleting instance');
                 }
 
-                showToast(`Instância "${name}" excluída!`, 'success');
+                showToast(`Instance "${name}" deleted!`, 'success');
                 
-                // Atualizar imediatamente
                 previousState = null;
                 await loadInstances();
             } catch (error) {
-                console.error('Erro ao excluir instância:', error);
+                console.error('Error deleting instance:', error);
                 showToast(error.message, 'error');
             }
         }
 
-        // Carregar instâncias ao iniciar
+        // Load instances on start
         loadInstances();
         
-        // Recarregar a cada 3 segundos de forma inteligente
+        // Auto-refresh every 3 seconds
         setInterval(loadInstances, 3000);
     </script>
 </body>
