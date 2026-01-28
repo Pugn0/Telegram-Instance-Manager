@@ -33,8 +33,8 @@ O **Telegram Instance Manager** é uma ferramenta completa para gerenciar múlti
 
 1. **Clone o repositório**
 ```bash
-git clone https://github.com/seu-usuario/telegram-instance-manager.git
-cd telegram-instance-manager
+git clone https://github.com/Pugn0/Telegram-Instance-Manager.git
+cd Telegram-Instance-Manager
 ```
 
 2. **Instale as dependências**
@@ -80,7 +80,7 @@ telegram.bat
 ## 🛠️ Estrutura do Projeto
 
 ```
-telegram-instance-manager/
+Telegram-Instance-Manager/
 │
 ├── main.py                 # Backend FastAPI
 ├── telegram.bat            # Script de inicialização Windows
@@ -202,7 +202,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 **Pugno**
 
 - Telegram: [@pugno_dev](https://t.me/pugno_dev)
-- GitHub: [@seu-usuario](https://github.com/seu-usuario)
+- GitHub: [@Pugn0](https://github.com/Pugn0)
 
 ---
 
